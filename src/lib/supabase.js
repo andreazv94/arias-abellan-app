@@ -58,7 +58,7 @@ export const getClients = async () => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('role', 'client')
+    .eq('role_type', 'client')
     .order('created_at', { ascending: false })
   return { data, error }
 }
