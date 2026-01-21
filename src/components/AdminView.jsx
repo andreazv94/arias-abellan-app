@@ -110,10 +110,21 @@ export default function AdminView() {
       if (error) {
         setMessage({ type: 'error', text: error.message })
       } else {
-        setMessage({ type: 'success', text: 'Cliente creado. Debe confirmar su email.' })
+        setMessage({ type: 'success', text: 'Cliente creado exitosamente' })
         setShowNewClientModal(false)
         setNewClient({ name: '', email: '', phone: '', password: '', hasTraining: false })
-        setTimeout(loadClients, 2000)
+        
+        // Recargar clientes y seleccionar el nuevo cliente
+        await loadClients()
+        
+        // Buscar el cliente recién creado por email
+        const newClientData = await getClients()
+        const createdClient = newClientData.data?.find(c => c.email === newClient.email)
+        
+        if (createdClient) {
+          setSelectedClient(createdClient)
+          setCurrentView('editNutrition')
+        }
       }
     } catch (err) {
       setMessage({ type: 'error', text: 'Error al crear cliente' })
