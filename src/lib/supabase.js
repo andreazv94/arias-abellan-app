@@ -321,3 +321,308 @@ export const updateClientProfile = async (clientId, updates) => {
     .single()
   return { data, error }
 }
+import { supabase } from './supabase'
+
+// ==================== PROFESIONALES ====================
+
+export const getProfessionals = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('role_type', ['admin', 'nutritionist', 'trainer'])
+    .order('created_at', { ascending: false })
+  return { data, error }
+}
+
+export const createProfessional = async (email, password, fullName, roleType) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        role: roleType,
+        role_type: roleType
+      }
+    }
+  })
+  return { data, error }
+}
+
+export const updateProfessional = async (professionalId, updates) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', professionalId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+// ==================== PLANTILLAS DE BONOS ====================
+
+export const getBonoTemplates = async () => {
+  const { data, error } = await supabase
+    .from('bono_templates')
+    .select('*')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+  return { data, error }
+}
+
+export const createBonoTemplate = async (templateData) => {
+  const { data, error } = await supabase
+    .from('bono_templates')
+    .insert(templateData)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const updateBonoTemplate = async (templateId, updates) => {
+  const { data, error } = await supabase
+    .from('bono_templates')
+    .update(updates)
+    .eq('id', templateId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteBonoTemplate = async (templateId) => {
+  const { error } = await supabase
+    .from('bono_templates')
+    .update({ is_active: false })
+    .eq('id', templateId)
+  return { error }
+}
+
+// ==================== BIBLIOTECA DE COMIDAS ====================
+
+export const getMealLibrary = async () => {
+  const { data, error } = await supabase
+    .from('meal_library')
+    .select('*')
+    .eq('is_public', true)
+    .order('meal_type')
+  return { data, error }
+}
+
+export const createMealInLibrary = async (mealData) => {
+  const { data, error } = await supabase
+    .from('meal_library')
+    .insert(mealData)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const updateMealInLibrary = async (mealId, updates) => {
+  const { data, error } = await supabase
+    .from('meal_library')
+    .update(updates)
+    .eq('id', mealId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteMealFromLibrary = async (mealId) => {
+  const { error } = await supabase
+    .from('meal_library')
+    .delete()
+    .eq('id', mealId)
+  return { error }
+}
+
+// ==================== PLANTILLAS DE ENTRENAMIENTOS ====================
+
+export const getWorkoutTemplates = async () => {
+  const { data, error } = await supabase
+    .from('workout_templates')
+    .select(`
+      *,
+      exercises:exercise_library(*)
+    `)
+    .eq('is_public', true)
+    .order('created_at', { ascending: false })
+  return { data, error }
+}
+
+export const createWorkoutTemplate = async (templateData, exercises) => {
+  // Crear la plantilla
+  const { data: template, error: templateError } = await supabase
+    .from('workout_templates')
+    .insert(templateData)
+    .select()
+    .single()
+  
+  if (templateError) return { data: null, error: templateError }
+  
+  // Añadir ejercicios
+  if (exercises && exercises.length > 0) {
+    const exercisesWithTemplate = exercises.map((ex, idx) => ({
+      template_id: template.id,
+      name: ex.name,
+      exercise_type: ex.exercise_type || 'strength',
+      sets: ex.sets || 3,
+      reps: ex.reps || '10',
+      rest: ex.rest || '60s',
+      weight: ex.weight,
+      notes: ex.notes,
+      order_index: idx
+    }))
+    
+    await supabase
+      .from('exercise_library')
+      .insert(exercisesWithTemplate)
+  }
+  
+  return { data: template, error: null }
+}
+
+export const updateWorkoutTemplate = async (templateId, updates) => {
+  const { data, error } = await supabase
+    .from('workout_templates')
+    .update(updates)
+    .eq('id', templateId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteWorkoutTemplate = async (templateId) => {
+  const { error } = await supabase
+    .from('workout_templates')
+    .delete()
+    .eq('id', templateId)
+  return { error }
+}
+
+// ==================== CITAS ====================
+
+export const getAppointments = async (filters = {}) => {
+  let query = supabase
+    .from('appointments')
+    .select(`
+      *,
+      client:client_id(id, full_name, email),
+      professional:professional_id(id, full_name, role_type)
+    `)
+    .order('appointment_date', { ascending: true })
+  
+  if (filters.professionalId) {
+    query = query.eq('professional_id', filters.professionalId)
+  }
+  
+  if (filters.clientId) {
+    query = query.eq('client_id', filters.clientId)
+  }
+  
+  if (filters.date) {
+    const startOfDay = new Date(filters.date)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(filters.date)
+    endOfDay.setHours(23, 59, 59, 999)
+    query = query.gte('appointment_date', startOfDay.toISOString())
+                 .lte('appointment_date', endOfDay.toISOString())
+  }
+  
+  if (filters.status) {
+    query = query.eq('status', filters.status)
+  }
+  
+  const { data, error } = await query
+  return { data, error }
+}
+
+export const createAppointment = async (appointmentData) => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .insert(appointmentData)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const updateAppointment = async (appointmentId, updates) => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .update(updates)
+    .eq('id', appointmentId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteAppointment = async (appointmentId) => {
+  const { error } = await supabase
+    .from('appointments')
+    .delete()
+    .eq('id', appointmentId)
+  return { error }
+}
+
+// ==================== HISTORIAL DE CONSULTAS ====================
+
+export const getConsultationHistory = async (clientId) => {
+  const { data, error } = await supabase
+    .from('consultation_history')
+    .select(`
+      *,
+      appointment:appointment_id(*),
+      professional:professional_id(full_name)
+    `)
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+  return { data, error }
+}
+
+export const createConsultationRecord = async (recordData) => {
+  const { data, error } = await supabase
+    .from('consultation_history')
+    .insert(recordData)
+    .select()
+    .single()
+  return { data, error }
+}
+
+// ==================== ESTADÍSTICAS ====================
+
+export const getDashboardStats = async () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  
+  // Clientes activos
+  const { data: activeClients } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact' })
+    .eq('role_type', 'client')
+    .eq('status', 'active')
+  
+  // Citas de hoy
+  const { data: todayAppointments } = await supabase
+    .from('appointments')
+    .select('id', { count: 'exact' })
+    .gte('appointment_date', today.toISOString())
+    .lt('appointment_date', tomorrow.toISOString())
+    .eq('status', 'scheduled')
+  
+  // Bonos por caducar (próximos 7 días)
+  const nextWeek = new Date(today)
+  nextWeek.setDate(nextWeek.getDate() + 7)
+  const { data: expiringBonos } = await supabase
+    .from('client_bonos')
+    .select('id', { count: 'exact' })
+    .gte('expiry_date', today.toISOString().split('T')[0])
+    .lte('expiry_date', nextWeek.toISOString().split('T')[0])
+    .eq('is_active', true)
+  
+  return {
+    activeClients: activeClients?.length || 0,
+    todayAppointments: todayAppointments?.length || 0,
+    expiringBonos: expiringBonos?.length || 0
+  }
+}
