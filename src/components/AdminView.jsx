@@ -329,6 +329,15 @@ export default function AdminView() {
                   Entrenos
                 </button>
               )}
+              <button 
+                onClick={() => setCurrentView('clientInfo')}
+                className={`px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
+                  currentView === 'clientInfo' ? 'bg-blue-600 text-white' : 'bg-white text-neutral-600'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                Info Cliente
+              </button>
             </>
           )}
         </div>
@@ -785,9 +794,235 @@ export default function AdminView() {
                 </div>
               </div>
             )}
+
+            {/* CLIENT INFO VIEW */}
+            {currentView === 'clientInfo' && selectedClient && (
+              <div className="bg-white rounded-2xl p-5">
+                <h2 className="text-lg font-semibold mb-4">Información del Cliente</h2>
+                
+                {/* Datos básicos */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-neutral-600 mb-3">Datos Generales</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-neutral-500">Nutricionista</label>
+                      <input 
+                        type="text"
+                        defaultValue={selectedClient.nutritionist || 'Carlos Arias'}
+                        onBlur={(e) => updateClientProfile(selectedClient.id, { nutritionist: e.target.value })}
+                        className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-neutral-500">Próxima Consulta</label>
+                      <input 
+                        type="datetime-local"
+                        defaultValue={selectedClient.next_appointment ? new Date(selectedClient.next_appointment).toISOString().slice(0, 16) : ''}
+                        onBlur={(e) => updateClientProfile(selectedClient.id, { next_appointment: e.target.value })}
+                        className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Horarios de entreno */}
+                {selectedClient.has_training && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-neutral-600">Horarios de Entreno</h3>
+                      <button 
+                        onClick={() => setShowScheduleModal(true)}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Añadir
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {trainingSchedule.map((schedule) => (
+                        <div key={schedule.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                          <div>
+                            <p className="text-sm font-medium">{dayLabels[schedule.day_of_week - 1]}</p>
+                            <p className="text-xs text-neutral-600">{schedule.start_time} - {schedule.end_time}</p>
+                            <p className="text-xs text-neutral-500">Entrenador: {schedule.trainer}</p>
+                          </div>
+                          <button 
+                            onClick={async () => {
+                              await deleteTrainingSchedule(schedule.id)
+                              loadClientData()
+                            }}
+                            className="p-2 text-red-400 hover:bg-red-100 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {trainingSchedule.length === 0 && (
+                        <p className="text-sm text-neutral-400 text-center py-4">No hay horarios configurados</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bonos */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-neutral-600">Bonos Contratados</h3>
+                    <button 
+                      onClick={() => setShowBonoModal(true)}
+                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Añadir
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {bonos.map((bono) => {
+                      const daysLeft = Math.ceil((new Date(bono.expiry_date) - new Date()) / (1000 * 60 * 60 * 24))
+                      const sessionsLeft = bono.sessions_total - bono.sessions_used
+                      return (
+                        <div key={bono.id} className="p-3 bg-green-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium">{bono.bono_type}</p>
+                            <button 
+                              onClick={async () => {
+                                await deleteBono(bono.id)
+                                loadClientData()
+                              }}
+                              className="p-1 text-red-400 hover:bg-red-100 rounded"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <p className="text-neutral-500">Sesiones</p>
+                              <p className="font-medium">{sessionsLeft} de {bono.sessions_total}</p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-500">Caduca en</p>
+                              <p className="font-medium">{daysLeft} días</p>
+                            </div>
+                          </div>
+                          {bono.notes && (
+                            <p className="text-xs text-neutral-600 mt-2">{bono.notes}</p>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {bonos.length === 0 && (
+                      <p className="text-sm text-neutral-400 text-center py-4">No hay bonos activos</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
+
+      {/* Modal Nuevo Bono */}
+      {showBonoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-5 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Nuevo Bono</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              await createBono(selectedClient.id, {
+                bono_type: formData.get('bono_type'),
+                sessions_total: parseInt(formData.get('sessions_total')),
+                sessions_used: 0,
+                start_date: formData.get('start_date'),
+                expiry_date: formData.get('expiry_date'),
+                notes: formData.get('notes')
+              })
+              setShowBonoModal(false)
+              loadClientData()
+            }}>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-neutral-500">Tipo de Bono</label>
+                  <input name="bono_type" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" placeholder="Ej: Mensual, Trimestral" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Sesiones Totales</label>
+                  <input name="sessions_total" type="number" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Fecha Inicio</label>
+                  <input name="start_date" type="date" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Fecha Caducidad</label>
+                  <input name="expiry_date" type="date" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Notas</label>
+                  <textarea name="notes" className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" rows="2"></textarea>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button type="button" onClick={() => setShowBonoModal(false)} className="flex-1 py-2.5 bg-neutral-100 rounded-xl text-sm font-medium">Cancelar</button>
+                <button type="submit" className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nuevo Horario */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-5 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Nuevo Horario</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              await upsertTrainingSchedule(selectedClient.id, {
+                day_of_week: parseInt(formData.get('day_of_week')),
+                start_time: formData.get('start_time'),
+                end_time: formData.get('end_time'),
+                trainer: formData.get('trainer'),
+                notes: formData.get('notes')
+              })
+              setShowScheduleModal(false)
+              loadClientData()
+            }}>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-neutral-500">Día de la Semana</label>
+                  <select name="day_of_week" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1">
+                    {dayLabels.map((day, idx) => (
+                      <option key={idx} value={idx + 1}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Hora Inicio</label>
+                  <input name="start_time" type="time" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Hora Fin</label>
+                  <input name="end_time" type="time" required className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Entrenador</label>
+                  <input name="trainer" defaultValue="Carlos" className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Notas</label>
+                  <textarea name="notes" className="w-full px-3 py-2 bg-neutral-50 rounded-lg text-sm mt-1" rows="2"></textarea>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button type="button" onClick={() => setShowScheduleModal(false)} className="flex-1 py-2.5 bg-neutral-100 rounded-xl text-sm font-medium">Cancelar</button>
+                <button type="submit" className="flex-1 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
