@@ -226,3 +226,98 @@ export const deleteWorkoutRoutine = async (routineId) => {
     .eq('id', routineId)
   return { error }
 }
+
+// ==================== BONOS ====================
+
+export const getClientBonos = async (clientId) => {
+  const { data, error } = await supabase
+    .from('client_bonos')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+  return { data, error }
+}
+
+export const createBono = async (clientId, bonoData) => {
+  const { data, error } = await supabase
+    .from('client_bonos')
+    .insert({
+      client_id: clientId,
+      bono_type: bonoData.bono_type,
+      sessions_total: bonoData.sessions_total,
+      sessions_used: bonoData.sessions_used || 0,
+      start_date: bonoData.start_date,
+      expiry_date: bonoData.expiry_date,
+      notes: bonoData.notes
+    })
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const updateBono = async (bonoId, updates) => {
+  const { data, error } = await supabase
+    .from('client_bonos')
+    .update(updates)
+    .eq('id', bonoId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteBono = async (bonoId) => {
+  const { error } = await supabase
+    .from('client_bonos')
+    .delete()
+    .eq('id', bonoId)
+  return { error }
+}
+
+// ==================== HORARIOS DE ENTRENO ====================
+
+export const getTrainingSchedule = async (clientId) => {
+  const { data, error } = await supabase
+    .from('training_schedule')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('day_of_week')
+  return { data, error }
+}
+
+export const upsertTrainingSchedule = async (clientId, scheduleData) => {
+  const { data, error } = await supabase
+    .from('training_schedule')
+    .upsert({
+      client_id: clientId,
+      day_of_week: scheduleData.day_of_week,
+      start_time: scheduleData.start_time,
+      end_time: scheduleData.end_time,
+      trainer: scheduleData.trainer || 'Carlos',
+      notes: scheduleData.notes
+    }, {
+      onConflict: 'client_id,day_of_week,start_time'
+    })
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteTrainingSchedule = async (scheduleId) => {
+  const { error } = await supabase
+    .from('training_schedule')
+    .delete()
+    .eq('id', scheduleId)
+  return { error }
+}
+
+// ==================== ACTUALIZAR PERFIL DEL CLIENTE ====================
+
+export const updateClientProfile = async (clientId, updates) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', clientId)
+    .select()
+    .single()
+  return { data, error }
+}

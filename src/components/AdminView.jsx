@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Utensils, Dumbbell, Plus, Trash2, Edit, Search, Check, X, ArrowLeft, LogOut, Save, AlertCircle } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth.jsx'
-import { signOut, getClients, updateClient, getMealPlans, getWorkoutRoutines, upsertMealPlan, upsertWorkoutRoutine, deleteWorkoutRoutine, signUp } from '../lib/supabase'
+import { signOut, getClients, updateClient, getMealPlans, getWorkoutRoutines, upsertMealPlan, upsertWorkoutRoutine, deleteWorkoutRoutine, signUp, getClientBonos, createBono, updateBono, deleteBono, getTrainingSchedule, upsertTrainingSchedule, deleteTrainingSchedule, updateClientProfile } from '../lib/supabase'
 
 // Logo Component
 const Logo = ({ className = "w-8 h-8" }) => (
@@ -30,6 +30,12 @@ export default function AdminView() {
   const [workouts, setWorkouts] = useState([])
   const [editingMeals, setEditingMeals] = useState({})
   const [editingWorkout, setEditingWorkout] = useState(null)
+  const [bonos, setBonos] = useState([])
+  const [trainingSchedule, setTrainingSchedule] = useState([])
+  const [showBonoModal, setShowBonoModal] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [editingBono, setEditingBono] = useState(null)
+  const [editingSchedule, setEditingSchedule] = useState(null)
 
   const dayLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
   const mealTypes = [
@@ -60,9 +66,11 @@ export default function AdminView() {
   const loadClientData = async () => {
     if (!selectedClient) return
     
-    const [mealsRes, workoutsRes] = await Promise.all([
+    const [mealsRes, workoutsRes, bonosRes, scheduleRes] = await Promise.all([
       getMealPlans(selectedClient.id),
-      getWorkoutRoutines(selectedClient.id)
+      getWorkoutRoutines(selectedClient.id),
+      getClientBonos(selectedClient.id),
+      getTrainingSchedule(selectedClient.id)
     ])
     
     if (mealsRes.data) {
@@ -80,6 +88,14 @@ export default function AdminView() {
     
     if (workoutsRes.data) {
       setWorkouts(workoutsRes.data)
+    }
+    
+    if (bonosRes.data) {
+      setBonos(bonosRes.data)
+    }
+    
+    if (scheduleRes.data) {
+      setTrainingSchedule(scheduleRes.data)
     }
   }
 
