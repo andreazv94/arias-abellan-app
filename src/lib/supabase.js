@@ -321,7 +321,6 @@ export const updateClientProfile = async (clientId, updates) => {
     .single()
   return { data, error }
 }
-import { supabase } from './supabase'
 
 // ==================== PROFESIONALES ====================
 
