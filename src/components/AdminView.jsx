@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Utensils, Dumbbell, Plus, Trash2, Edit, Search, Check, X, ArrowLeft, LogOut, Save, AlertCircle } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/useAuth.jsx'
 import { signOut, getClients, updateClient, getMealPlans, getWorkoutRoutines, upsertMealPlan, upsertWorkoutRoutine, deleteWorkoutRoutine, signUp } from '../lib/supabase'
 
 // Logo Component

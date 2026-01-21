@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { User, Utensils, Dumbbell, Home, Clock, Flame, Target, TrendingUp, ArrowLeft, ChevronLeft, ChevronRight, Bell, Calendar, LogOut } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/useAuth.jsx'
 import { signOut, getMealPlans, getWorkoutRoutines } from '../lib/supabase'
 
 // Logo Component

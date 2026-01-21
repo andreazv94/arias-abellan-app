@@ -1,5 +1,5 @@
 import React from 'react'
-import { AuthProvider, useAuth } from './hooks/useAuth'
+import { AuthProvider, useAuth } from './hooks/useAuth.jsx'
 import Login from './components/Login'
 import ClientView from './components/ClientView'
 import AdminView from './components/AdminView'
