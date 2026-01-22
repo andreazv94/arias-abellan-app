@@ -53,6 +53,7 @@ export default function AdminViewNew() {
   // Modal states
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState('')
+  const [modalData, setModalData] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   
   // Search
@@ -122,6 +123,7 @@ export default function AdminViewNew() {
 
   const openModal = (type, item = null) => {
     setModalType(type)
+    setModalData(item)
     setEditingItem(item)
     setShowModal(true)
   }
@@ -129,6 +131,7 @@ export default function AdminViewNew() {
   const closeModal = () => {
     setShowModal(false)
     setModalType('')
+    setModalData(null)
     setEditingItem(null)
   }
 
