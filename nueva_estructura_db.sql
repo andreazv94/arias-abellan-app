@@ -126,6 +126,44 @@ ALTER TABLE exercise_library DISABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE consultation_history DISABLE ROW LEVEL SECURITY;
 
+-- =============================================
+-- ACTUALIZAR POLÍTICAS RLS PARA PROFILES
+-- =============================================
+
+-- Eliminar políticas antiguas que solo permitían 'admin'
+DROP POLICY IF EXISTS "Los admins pueden ver todos los perfiles" ON profiles;
+DROP POLICY IF EXISTS "Los admins pueden insertar perfiles" ON profiles;
+DROP POLICY IF EXISTS "Los admins pueden actualizar perfiles" ON profiles;
+
+-- Crear nuevas políticas que incluyen admin, nutritionist y trainer
+CREATE POLICY "Los profesionales pueden ver todos los perfiles"
+  ON profiles FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role_type IN ('admin', 'nutritionist', 'trainer')
+    )
+  );
+
+CREATE POLICY "Los profesionales pueden insertar perfiles"
+  ON profiles FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role_type IN ('admin', 'nutritionist', 'trainer')
+    )
+    OR auth.uid() = id  -- Permite insertar el propio perfil al registrarse
+  );
+
+CREATE POLICY "Los profesionales pueden actualizar perfiles"
+  ON profiles FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role_type IN ('admin', 'nutritionist', 'trainer')
+    )
+  );
+
 -- Triggers para updated_at
 CREATE OR REPLACE TRIGGER update_bono_templates_updated_at
   BEFORE UPDATE ON bono_templates

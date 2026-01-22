@@ -771,7 +771,8 @@ export default function AdminViewNew() {
                       full_name: formData.get('full_name'),
                       role_type: formData.get('role_type')
                     }
-                    await updateProfessional(modalData.id, updates)
+                    const { error } = await updateProfessional(modalData.id, updates)
+                    if (error) throw new Error(error.message)
                   } else {
                     // Crear nuevo profesional
                     const profData = {
@@ -780,7 +781,8 @@ export default function AdminViewNew() {
                       full_name: formData.get('full_name'),
                       role_type: formData.get('role_type')
                     }
-                    await createProfessional(profData.email, profData.password, profData.full_name, profData.role_type)
+                    const { error } = await createProfessional(profData.email, profData.password, profData.full_name, profData.role_type)
+                    if (error) throw new Error(error.message)
                   }
                   await loadProfessionals()
                 }

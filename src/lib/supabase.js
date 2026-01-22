@@ -342,7 +342,7 @@ export const getProfessionals = async () => {
 }
 
 export const createProfessional = async (email, password, fullName, roleType) => {
-  // Crear usuario en auth sin confirmación de email
+  // Crear usuario en auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -351,36 +351,45 @@ export const createProfessional = async (email, password, fullName, roleType) =>
       data: {
         full_name: fullName,
         role: roleType,
-        role_type: roleType,
-        email_verified: true
+        role_type: roleType
       }
     }
   })
-  
-  if (authError) return { data: null, error: authError }
-  
-  // El trigger de la base de datos crea automáticamente el perfil
-  // Actualizar el role_type en el perfil
-  if (authData.user) {
-    // Esperar un poco para que el trigger cree el perfil
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .update({ 
-        role: roleType,
-        role_type: roleType,
-        is_active: true
-      })
-      .eq('id', authData.user.id)
-      .select()
-      .single()
-    
-    if (profileError) return { data: null, error: profileError }
-    return { data: profileData, error: null }
+
+  if (authError) {
+    console.error('Error en signUp:', authError)
+    return { data: null, error: authError }
   }
-  
-  return { data: authData, error: null }
+
+  if (!authData.user) {
+    return { data: null, error: { message: 'No se pudo crear el usuario' } }
+  }
+
+  // Crear el perfil directamente con upsert (INSERT o UPDATE si ya existe)
+  // Esto funciona incluso si el trigger no se ha ejecutado
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .upsert({
+      id: authData.user.id,
+      email: email,
+      full_name: fullName,
+      role: roleType,
+      role_type: roleType,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'id'
+    })
+    .select()
+    .single()
+
+  if (profileError) {
+    console.error('Error al crear perfil:', profileError)
+    return { data: null, error: profileError }
+  }
+
+  return { data: profileData, error: null }
 }
 
 export const updateProfessional = async (professionalId, updates) => {
