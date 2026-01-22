@@ -13,11 +13,11 @@ import {
   createClientAccount,
   createProfessional,
   createBonoTemplate,
-  createMealLibrary,
+  createMealInLibrary,
   createWorkoutTemplate,
   createAppointment,
   updateBonoTemplate,
-  updateMealLibrary,
+  updateMealInLibrary,
   updateWorkoutTemplate,
   updateAppointment,
   deleteBonoTemplate,
@@ -715,9 +715,9 @@ export default function AdminViewNew() {
                     ingredients: formData.get('ingredients')
                   }
                   if (modalData) {
-                    await updateMealLibrary(modalData.id, mealData)
+                    await updateMealInLibrary(modalData.id, mealData)
                   } else {
-                    await createMealLibrary(mealData)
+                    await createMealInLibrary(mealData)
                   }
                   await loadMealLibrary()
                 }
