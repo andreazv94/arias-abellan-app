@@ -638,17 +638,348 @@ export default function AdminViewNew() {
         </div>
       </main>
 
-      {/* Modals - Placeholder */}
+      {/* MODALS */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Modal en desarrollo</h3>
-              <button onClick={closeModal} className="p-2 hover:bg-neutral-100 rounded-lg">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={closeModal}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold">
+                {modalType === 'client' && (modalData ? 'Editar Cliente' : 'Nuevo Cliente')}
+                {modalType === 'professional' && (modalData ? 'Editar Profesional' : 'Nuevo Profesional')}
+                {modalType === 'bono' && (modalData ? 'Editar Bono' : 'Nueva Plantilla de Bono')}
+                {modalType === 'meal' && (modalData ? 'Editar Comida' : 'Nueva Comida')}
+                {modalType === 'workout' && (modalData ? 'Editar Entreno' : 'Nueva Plantilla de Entreno')}
+                {modalType === 'appointment' && (modalData ? 'Editar Cita' : 'Nueva Cita')}
+              </h3>
+              <button onClick={closeModal} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-neutral-500">Tipo: {modalType}</p>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.target)
+              
+              try {
+                if (modalType === 'client') {
+                  const clientData = {
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    full_name: formData.get('full_name'),
+                    phone: formData.get('phone'),
+                    has_training: formData.get('has_training') === 'on'
+                  }
+                  await createClient(clientData.email, clientData.password, clientData.full_name, clientData.phone, clientData.has_training)
+                  await loadClients()
+                }
+                
+                if (modalType === 'professional') {
+                  const profData = {
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    full_name: formData.get('full_name'),
+                    role_type: formData.get('role_type')
+                  }
+                  await createProfessional(profData.email, profData.password, profData.full_name, profData.role_type)
+                  await loadProfessionals()
+                }
+                
+                if (modalType === 'bono') {
+                  const bonoData = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    duration_days: parseInt(formData.get('duration_days')),
+                    sessions_included: parseInt(formData.get('sessions_included')),
+                    price: parseFloat(formData.get('price')),
+                    service_type: formData.get('service_type')
+                  }
+                  if (modalData) {
+                    await updateBonoTemplate(modalData.id, bonoData)
+                  } else {
+                    await createBonoTemplate(bonoData)
+                  }
+                  await loadBonoTemplates()
+                }
+                
+                if (modalType === 'meal') {
+                  const mealData = {
+                    name: formData.get('name'),
+                    meal_type: formData.get('meal_type'),
+                    description: formData.get('description'),
+                    calories: parseInt(formData.get('calories')),
+                    protein: parseInt(formData.get('protein')),
+                    carbs: parseInt(formData.get('carbs')),
+                    fat: parseInt(formData.get('fat')),
+                    ingredients: formData.get('ingredients')
+                  }
+                  if (modalData) {
+                    await updateMealLibrary(modalData.id, mealData)
+                  } else {
+                    await createMealLibrary(mealData)
+                  }
+                  await loadMealLibrary()
+                }
+                
+                if (modalType === 'workout') {
+                  const workoutData = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    workout_type: formData.get('workout_type'),
+                    duration: parseInt(formData.get('duration')),
+                    difficulty: formData.get('difficulty')
+                  }
+                  if (modalData) {
+                    await updateWorkoutTemplate(modalData.id, workoutData)
+                  } else {
+                    await createWorkoutTemplate(workoutData)
+                  }
+                  await loadWorkoutTemplates()
+                }
+                
+                if (modalType === 'appointment') {
+                  const aptData = {
+                    client_id: formData.get('client_id'),
+                    professional_id: formData.get('professional_id'),
+                    appointment_type: formData.get('appointment_type'),
+                    appointment_date: formData.get('appointment_date'),
+                    notes: formData.get('notes')
+                  }
+                  if (modalData) {
+                    await updateAppointment(modalData.id, aptData)
+                  } else {
+                    await createAppointment(aptData)
+                  }
+                  await loadAppointments()
+                }
+                
+                closeModal()
+              } catch (error) {
+                console.error('Error:', error)
+                alert('Error al guardar: ' + error.message)
+              }
+            }} className="space-y-4">
+              
+              {/* CLIENT FORM */}
+              {modalType === 'client' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nombre completo</label>
+                    <input name="full_name" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Email</label>
+                    <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Contraseña inicial</label>
+                    <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Teléfono</label>
+                    <input name="phone" type="tel" className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input name="has_training" type="checkbox" className="w-4 h-4" />
+                    <label className="text-sm font-medium">Incluir servicio de entrenamiento</label>
+                  </div>
+                </>
+              )}
+              
+              {/* PROFESSIONAL FORM */}
+              {modalType === 'professional' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nombre completo</label>
+                    <input name="full_name" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Email</label>
+                    <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Contraseña</label>
+                    <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Rol</label>
+                    <select name="role_type" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="nutritionist">Nutricionista</option>
+                      <option value="trainer">Entrenador</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                </>
+              )}
+              
+              {/* BONO FORM */}
+              {modalType === 'bono' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nombre del bono</label>
+                    <input name="name" defaultValue={modalData?.name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descripción</label>
+                    <textarea name="description" defaultValue={modalData?.description} rows={3} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Duración (días)</label>
+                      <input name="duration_days" type="number" defaultValue={modalData?.duration_days} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Sesiones</label>
+                      <input name="sessions_included" type="number" defaultValue={modalData?.sessions_included} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Precio (€)</label>
+                    <input name="price" type="number" step="0.01" defaultValue={modalData?.price} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tipo de servicio</label>
+                    <select name="service_type" defaultValue={modalData?.service_type} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="nutrition">Nutrición</option>
+                      <option value="training">Entrenamiento</option>
+                      <option value="both">Nutrición + Entrenamiento</option>
+                    </select>
+                  </div>
+                </>
+              )}
+              
+              {/* MEAL FORM */}
+              {modalType === 'meal' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nombre de la comida</label>
+                    <input name="name" defaultValue={modalData?.name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tipo de comida</label>
+                    <select name="meal_type" defaultValue={modalData?.meal_type} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="breakfast">Desayuno</option>
+                      <option value="mid_morning">Media mañana</option>
+                      <option value="lunch">Comida</option>
+                      <option value="snack">Merienda</option>
+                      <option value="dinner">Cena</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descripción</label>
+                    <textarea name="description" defaultValue={modalData?.description} rows={2} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Calorías</label>
+                      <input name="calories" type="number" defaultValue={modalData?.calories} required className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Proteínas (g)</label>
+                      <input name="protein" type="number" defaultValue={modalData?.protein} required className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Carbos (g)</label>
+                      <input name="carbs" type="number" defaultValue={modalData?.carbs} required className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Grasas (g)</label>
+                      <input name="fat" type="number" defaultValue={modalData?.fat} required className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Ingredientes</label>
+                    <textarea name="ingredients" defaultValue={modalData?.ingredients} rows={3} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" placeholder="Lista de ingredientes separados por comas" />
+                  </div>
+                </>
+              )}
+              
+              {/* WORKOUT FORM */}
+              {modalType === 'workout' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nombre del entreno</label>
+                    <input name="name" defaultValue={modalData?.name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descripción</label>
+                    <textarea name="description" defaultValue={modalData?.description} rows={3} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tipo</label>
+                    <select name="workout_type" defaultValue={modalData?.workout_type} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="strength">Fuerza</option>
+                      <option value="cardio">Cardio</option>
+                      <option value="hiit">HIIT</option>
+                      <option value="flexibility">Flexibilidad</option>
+                      <option value="mixed">Mixto</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Duración (min)</label>
+                      <input name="duration" type="number" defaultValue={modalData?.duration} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Dificultad</label>
+                      <select name="difficulty" defaultValue={modalData?.difficulty} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                        <option value="beginner">Principiante</option>
+                        <option value="intermediate">Intermedio</option>
+                        <option value="advanced">Avanzado</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {/* APPOINTMENT FORM */}
+              {modalType === 'appointment' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Cliente</label>
+                    <select name="client_id" defaultValue={modalData?.client_id} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="">Seleccionar cliente</option>
+                      {clients.map(client => (
+                        <option key={client.id} value={client.id}>{client.full_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Profesional</label>
+                    <select name="professional_id" defaultValue={modalData?.professional_id} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="">Seleccionar profesional</option>
+                      {professionals.map(prof => (
+                        <option key={prof.id} value={prof.id}>{prof.full_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tipo de cita</label>
+                    <select name="appointment_type" defaultValue={modalData?.appointment_type} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="nutrition">Nutrición</option>
+                      <option value="training">Entrenamiento</option>
+                      <option value="evaluation">Evaluación</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Fecha y hora</label>
+                    <input name="appointment_date" type="datetime-local" defaultValue={modalData?.appointment_date?.slice(0, 16)} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Notas</label>
+                    <textarea name="notes" defaultValue={modalData?.notes} rows={3} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                </>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition-colors">
+                  {modalData ? 'Guardar cambios' : 'Crear'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
