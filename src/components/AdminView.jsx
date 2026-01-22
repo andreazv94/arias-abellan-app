@@ -10,13 +10,15 @@ import {
   getWorkoutTemplates,
   getAppointments,
   getDashboardStats,
+  createClientAccount,
   createProfessional,
   createBonoTemplate,
-  createMealInLibrary,
+  createMealLibrary,
   createWorkoutTemplate,
   createAppointment,
   updateBonoTemplate,
-  updateMealInLibrary,
+  updateMealLibrary,
+  updateWorkoutTemplate,
   updateAppointment,
   deleteBonoTemplate,
   deleteMealFromLibrary,
@@ -669,7 +671,7 @@ export default function AdminViewNew() {
                     phone: formData.get('phone'),
                     has_training: formData.get('has_training') === 'on'
                   }
-                  await createClient(clientData.email, clientData.password, clientData.full_name, clientData.phone, clientData.has_training)
+                  await createClientAccount(clientData.email, clientData.password, clientData.full_name, clientData.phone, clientData.has_training)
                   await loadClients()
                 }
                 
