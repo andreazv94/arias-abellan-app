@@ -63,16 +63,6 @@ export const getClients = async () => {
   return { data, error }
 }
 
-export const updateClient = async (clientId, updates) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', clientId)
-    .select()
-    .single()
-  return { data, error }
-}
-
 export const createClientAccount = async (email, password, fullName, phone, hasTraining) => {
   // Crear usuario en auth
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
