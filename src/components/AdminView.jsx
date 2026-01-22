@@ -705,24 +705,61 @@ export default function AdminViewNew() {
               
               try {
                 if (modalType === 'client') {
+                  const fullName = `${formData.get('first_name')} ${formData.get('last_name')}`
+                  
                   if (modalData) {
                     // Editar cliente existente
                     const updates = {
-                      full_name: formData.get('full_name'),
+                      first_name: formData.get('first_name'),
+                      last_name: formData.get('last_name'),
+                      full_name: fullName,
                       phone: formData.get('phone'),
+                      birth_date: formData.get('birth_date') || null,
+                      gender: formData.get('gender') || null,
+                      address: formData.get('address') || null,
+                      city: formData.get('city') || null,
+                      postal_code: formData.get('postal_code') || null,
+                      weight: formData.get('weight') ? parseFloat(formData.get('weight')) : null,
+                      height: formData.get('height') ? parseFloat(formData.get('height')) : null,
+                      goal: formData.get('goal') || null,
+                      allergies: formData.get('allergies') || null,
+                      medical_conditions: formData.get('medical_conditions') || null,
+                      notes: formData.get('notes') || null,
                       has_training: formData.get('has_training') === 'on'
                     }
                     await updateClient(modalData.id, updates)
                   } else {
                     // Crear nuevo cliente
-                    const clientData = {
-                      email: formData.get('email'),
-                      password: formData.get('password'),
-                      full_name: formData.get('full_name'),
-                      phone: formData.get('phone'),
-                      has_training: formData.get('has_training') === 'on'
+                    await createClientAccount(
+                      formData.get('email'),
+                      formData.get('password'),
+                      fullName,
+                      formData.get('phone'),
+                      formData.get('has_training') === 'on'
+                    )
+                    
+                    // Obtener el ID del cliente recién creado y actualizar campos adicionales
+                    const { data: newClients } = await getClients()
+                    const newClient = newClients.find(c => c.email === formData.get('email'))
+                    
+                    if (newClient) {
+                      const additionalData = {
+                        first_name: formData.get('first_name'),
+                        last_name: formData.get('last_name'),
+                        birth_date: formData.get('birth_date') || null,
+                        gender: formData.get('gender') || null,
+                        address: formData.get('address') || null,
+                        city: formData.get('city') || null,
+                        postal_code: formData.get('postal_code') || null,
+                        weight: formData.get('weight') ? parseFloat(formData.get('weight')) : null,
+                        height: formData.get('height') ? parseFloat(formData.get('height')) : null,
+                        goal: formData.get('goal') || null,
+                        allergies: formData.get('allergies') || null,
+                        medical_conditions: formData.get('medical_conditions') || null,
+                        notes: formData.get('notes') || null
+                      }
+                      await updateClient(newClient.id, additionalData)
                     }
-                    await createClientAccount(clientData.email, clientData.password, clientData.full_name, clientData.phone, clientData.has_training)
                   }
                   await loadClients()
                 }
@@ -826,26 +863,98 @@ export default function AdminViewNew() {
               {/* CLIENT FORM */}
               {modalType === 'client' && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Nombre completo</label>
-                    <input name="full_name" defaultValue={modalData?.full_name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Nombre *</label>
+                      <input name="first_name" defaultValue={modalData?.first_name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Apellidos *</label>
+                      <input name="last_name" defaultValue={modalData?.last_name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
                   </div>
+                  
                   {!modalData && (
                     <>
                       <div>
-                        <label className="block text-sm font-medium mb-2">Email</label>
+                        <label className="block text-sm font-medium mb-2">Email *</label>
                         <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-2">Contraseña inicial</label>
+                        <label className="block text-sm font-medium mb-2">Contraseña inicial *</label>
                         <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
                       </div>
                     </>
                   )}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Teléfono</label>
-                    <input name="phone" type="tel" defaultValue={modalData?.phone} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Teléfono</label>
+                      <input name="phone" type="tel" defaultValue={modalData?.phone} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Fecha de nacimiento</label>
+                      <input name="birth_date" type="date" defaultValue={modalData?.birth_date} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Género</label>
+                    <select name="gender" defaultValue={modalData?.gender} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                      <option value="">Seleccionar...</option>
+                      <option value="male">Masculino</option>
+                      <option value="female">Femenino</option>
+                      <option value="other">Otro</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Dirección</label>
+                    <input name="address" defaultValue={modalData?.address} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Ciudad</label>
+                      <input name="city" defaultValue={modalData?.city} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Código Postal</label>
+                      <input name="postal_code" defaultValue={modalData?.postal_code} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Peso (kg)</label>
+                      <input name="weight" type="number" step="0.1" defaultValue={modalData?.weight} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Altura (cm)</label>
+                      <input name="height" type="number" step="0.1" defaultValue={modalData?.height} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Objetivo</label>
+                    <textarea name="goal" defaultValue={modalData?.goal} rows="2" className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" placeholder="Ej: Perder peso, ganar masa muscular, mejorar salud..."></textarea>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Alergias / Intolerancias</label>
+                    <textarea name="allergies" defaultValue={modalData?.allergies} rows="2" className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" placeholder="Ej: Lactosa, gluten, frutos secos..."></textarea>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Condiciones médicas</label>
+                    <textarea name="medical_conditions" defaultValue={modalData?.medical_conditions} rows="2" className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" placeholder="Ej: Diabetes, hipertensión, hipotiroidismo..."></textarea>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Notas adicionales</label>
+                    <textarea name="notes" defaultValue={modalData?.notes} rows="2" className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" placeholder="Cualquier información relevante..."></textarea>
+                  </div>
+                  
                   <div className="flex items-center gap-2">
                     <input name="has_training" type="checkbox" defaultChecked={modalData?.has_training} className="w-4 h-4" />
                     <label className="text-sm font-medium">Incluir servicio de entrenamiento</label>

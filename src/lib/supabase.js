@@ -342,15 +342,17 @@ export const getProfessionals = async () => {
 }
 
 export const createProfessional = async (email, password, fullName, roleType) => {
-  // Crear usuario en auth
+  // Crear usuario en auth sin confirmación de email
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo: window.location.origin,
       data: {
         full_name: fullName,
         role: roleType,
-        role_type: roleType
+        role_type: roleType,
+        email_verified: true
       }
     }
   })
