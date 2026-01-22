@@ -334,18 +334,38 @@ export const getProfessionals = async () => {
 }
 
 export const createProfessional = async (email, password, fullName, roleType) => {
-  const { data, error } = await supabase.auth.signUp({
+  // Crear usuario en auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo: window.location.origin,
       data: {
         full_name: fullName,
-        role: roleType,
         role_type: roleType
       }
     }
   })
-  return { data, error }
+  
+  if (authError) return { data: null, error: authError }
+  
+  // Crear perfil en la tabla profiles
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .insert({
+      id: authData.user.id,
+      email: email,
+      full_name: fullName,
+      role: roleType,
+      role_type: roleType,
+      is_active: true
+    })
+    .select()
+    .single()
+  
+  if (profileError) return { data: null, error: profileError }
+  
+  return { data: profileData, error: null }
 }
 
 export const updateProfessional = async (professionalId, updates) => {
@@ -356,6 +376,14 @@ export const updateProfessional = async (professionalId, updates) => {
     .select()
     .single()
   return { data, error }
+}
+
+export const deleteProfessional = async (professionalId) => {
+  const { error } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', professionalId)
+  return { error }
 }
 
 // ==================== PLANTILLAS DE BONOS ====================

@@ -12,6 +12,8 @@ import {
   getDashboardStats,
   createClientAccount,
   createProfessional,
+  updateProfessional,
+  deleteProfessional,
   createBonoTemplate,
   createMealInLibrary,
   createWorkoutTemplate,
@@ -382,12 +384,27 @@ export default function AdminViewNew() {
                            prof.role_type === 'nutritionist' ? 'Nutricionista' : 'Entrenador'}
                         </span>
                       </div>
-                      <button
-                        onClick={() => openModal('professional', prof)}
-                        className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        Editar
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openModal('professional', prof)}
+                          className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm(`¿Eliminar a ${prof.full_name}?`)) {
+                              await deleteProfessional(prof.id)
+                              await loadProfessionals()
+                              showMessage('success', 'Profesional eliminado correctamente')
+                            }
+                          }}
+                          className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   {professionals.length === 0 && (
@@ -679,13 +696,23 @@ export default function AdminViewNew() {
                 }
                 
                 if (modalType === 'professional') {
-                  const profData = {
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    full_name: formData.get('full_name'),
-                    role_type: formData.get('role_type')
+                  if (modalData) {
+                    // Editar profesional existente
+                    const updates = {
+                      full_name: formData.get('full_name'),
+                      role_type: formData.get('role_type')
+                    }
+                    await updateProfessional(modalData.id, updates)
+                  } else {
+                    // Crear nuevo profesional
+                    const profData = {
+                      email: formData.get('email'),
+                      password: formData.get('password'),
+                      full_name: formData.get('full_name'),
+                      role_type: formData.get('role_type')
+                    }
+                    await createProfessional(profData.email, profData.password, profData.full_name, profData.role_type)
                   }
-                  await createProfessional(profData.email, profData.password, profData.full_name, profData.role_type)
                   await loadProfessionals()
                 }
                 
@@ -795,19 +822,23 @@ export default function AdminViewNew() {
                 <>
                   <div>
                     <label className="block text-sm font-medium mb-2">Nombre completo</label>
-                    <input name="full_name" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    <input name="full_name" defaultValue={modalData?.full_name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Email</label>
-                    <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Contraseña</label>
-                    <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
-                  </div>
+                  {!modalData && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Email</label>
+                        <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Contraseña</label>
+                        <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="block text-sm font-medium mb-2">Rol</label>
-                    <select name="role_type" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
+                    <select name="role_type" defaultValue={modalData?.role_type} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent">
                       <option value="nutritionist">Nutricionista</option>
                       <option value="trainer">Entrenador</option>
                       <option value="admin">Administrador</option>
