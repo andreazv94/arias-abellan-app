@@ -334,38 +334,39 @@ export const getProfessionals = async () => {
 }
 
 export const createProfessional = async (email, password, fullName, roleType) => {
-  // Crear usuario en auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // Crear usuario en auth con admin
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
-    options: {
-      emailRedirectTo: window.location.origin,
-      data: {
-        full_name: fullName,
-        role_type: roleType
-      }
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      role: roleType,
+      role_type: roleType
     }
   })
   
   if (authError) return { data: null, error: authError }
   
-  // Crear perfil en la tabla profiles
-  const { data: profileData, error: profileError } = await supabase
-    .from('profiles')
-    .insert({
-      id: authData.user.id,
-      email: email,
-      full_name: fullName,
-      role: roleType,
-      role_type: roleType,
-      is_active: true
-    })
-    .select()
-    .single()
+  // El trigger de la base de datos crea automáticamente el perfil
+  // Solo necesitamos actualizar el role_type
+  if (authData.user) {
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .update({ 
+        role: roleType,
+        role_type: roleType,
+        is_active: true
+      })
+      .eq('id', authData.user.id)
+      .select()
+      .single()
+    
+    if (profileError) return { data: null, error: profileError }
+    return { data: profileData, error: null }
+  }
   
-  if (profileError) return { data: null, error: profileError }
-  
-  return { data: profileData, error: null }
+  return { data: authData, error: null }
 }
 
 export const updateProfessional = async (professionalId, updates) => {

@@ -730,7 +730,7 @@ export default function AdminViewNew() {
                   } else {
                     await createBonoTemplate(bonoData)
                   }
-                  await loadBonoTemplates()
+                  await loadServices()
                 }
                 
                 if (modalType === 'meal') {
@@ -749,7 +749,7 @@ export default function AdminViewNew() {
                   } else {
                     await createMealInLibrary(mealData)
                   }
-                  await loadMealLibrary()
+                  await loadServices()
                 }
                 
                 if (modalType === 'workout') {
@@ -765,7 +765,7 @@ export default function AdminViewNew() {
                   } else {
                     await createWorkoutTemplate(workoutData)
                   }
-                  await loadWorkoutTemplates()
+                  await loadServices()
                 }
                 
                 if (modalType === 'appointment') {
