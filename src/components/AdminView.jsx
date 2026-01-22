@@ -11,6 +11,8 @@ import {
   getAppointments,
   getDashboardStats,
   createClientAccount,
+  updateClient,
+  deleteClient,
   createProfessional,
   updateProfessional,
   deleteProfessional,
@@ -337,6 +339,25 @@ export default function AdminViewNew() {
                         }`}>
                           {client.is_active ? 'Activo' : 'Inactivo'}
                         </span>
+                        <button
+                          onClick={() => openModal('client', client)}
+                          className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm(`¿Eliminar a ${client.full_name}?`)) {
+                              await deleteClient(client.id)
+                              await loadClients()
+                              showMessage('success', 'Cliente eliminado correctamente')
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -684,14 +705,25 @@ export default function AdminViewNew() {
               
               try {
                 if (modalType === 'client') {
-                  const clientData = {
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    full_name: formData.get('full_name'),
-                    phone: formData.get('phone'),
-                    has_training: formData.get('has_training') === 'on'
+                  if (modalData) {
+                    // Editar cliente existente
+                    const updates = {
+                      full_name: formData.get('full_name'),
+                      phone: formData.get('phone'),
+                      has_training: formData.get('has_training') === 'on'
+                    }
+                    await updateClient(modalData.id, updates)
+                  } else {
+                    // Crear nuevo cliente
+                    const clientData = {
+                      email: formData.get('email'),
+                      password: formData.get('password'),
+                      full_name: formData.get('full_name'),
+                      phone: formData.get('phone'),
+                      has_training: formData.get('has_training') === 'on'
+                    }
+                    await createClientAccount(clientData.email, clientData.password, clientData.full_name, clientData.phone, clientData.has_training)
                   }
-                  await createClientAccount(clientData.email, clientData.password, clientData.full_name, clientData.phone, clientData.has_training)
                   await loadClients()
                 }
                 
@@ -796,22 +828,26 @@ export default function AdminViewNew() {
                 <>
                   <div>
                     <label className="block text-sm font-medium mb-2">Nombre completo</label>
-                    <input name="full_name" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    <input name="full_name" defaultValue={modalData?.full_name} required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Email</label>
-                    <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Contraseña inicial</label>
-                    <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
-                  </div>
+                  {!modalData && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Email</label>
+                        <input name="email" type="email" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Contraseña inicial</label>
+                        <input name="password" type="password" required className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="block text-sm font-medium mb-2">Teléfono</label>
-                    <input name="phone" type="tel" className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
+                    <input name="phone" type="tel" defaultValue={modalData?.phone} className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <input name="has_training" type="checkbox" className="w-4 h-4" />
+                    <input name="has_training" type="checkbox" defaultChecked={modalData?.has_training} className="w-4 h-4" />
                     <label className="text-sm font-medium">Incluir servicio de entrenamiento</label>
                   </div>
                 </>

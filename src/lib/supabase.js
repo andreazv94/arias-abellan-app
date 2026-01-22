@@ -111,6 +111,24 @@ export const createClientAccount = async (email, password, fullName, phone, hasT
   return { data: authData, error: null }
 }
 
+export const updateClient = async (clientId, updates) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', clientId)
+    .select()
+    .single()
+  return { data, error }
+}
+
+export const deleteClient = async (clientId) => {
+  const { error } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', clientId)
+  return { error }
+}
+
 // ==================== MEAL PLANS ====================
 
 export const getMealPlans = async (clientId) => {
@@ -334,23 +352,27 @@ export const getProfessionals = async () => {
 }
 
 export const createProfessional = async (email, password, fullName, roleType) => {
-  // Crear usuario en auth con admin
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  // Crear usuario en auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
-    email_confirm: true,
-    user_metadata: {
-      full_name: fullName,
-      role: roleType,
-      role_type: roleType
+    options: {
+      data: {
+        full_name: fullName,
+        role: roleType,
+        role_type: roleType
+      }
     }
   })
   
   if (authError) return { data: null, error: authError }
   
   // El trigger de la base de datos crea automáticamente el perfil
-  // Solo necesitamos actualizar el role_type
+  // Actualizar el role_type en el perfil
   if (authData.user) {
+    // Esperar un poco para que el trigger cree el perfil
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .update({ 
